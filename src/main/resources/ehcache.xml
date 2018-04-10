@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://ehcache.sf.net/ehcache.xsd">
+    <!--相对路径 会根据运行时生成  -->
+    <diskStore path="java.io.tmpdir" />
+    <!--
+    maxElementsInMemory表示cache中最大允许保存的对象数据量。
+    eternal表示cache中数据是否为常量。 
+    timeToIdleSeconds指定缓存闲置多久未被使用便清理掉
+    timeToLiveSeconds表示缓存数据的生命时间。   
+    overflowToDisk表示内存不足时，是否启用磁盘缓存。
+    diskPersistent指定缓存是否被持久化到硬盘中
+    -->
+    <!--默认缓存配置  -->
+    <defaultCache 
+        maxElementsInMemory="5000" 
+        eternal="false"
+        overflowToDisk="true"  
+        timeToIdleSeconds="1200" 
+        timeToLiveSeconds="1200"
+        diskPersistent="false" />
+    <!-- 查询缓存设置 -->
+    <cache
+       name="org.hibernate.cache.StandardQueryCache"
+       maxElementsInMemory="10000"
+       eternal="false"
+       timeToLiveSeconds="120"
+       overflowToDisk="true"
+      />
+     
+      <!--时间戳缓存，内部使用，用于保存最近更新的表的时间戳，这是非常重要的，无需失效，关闭时间戳缓存区域的过期时间 -->
+      <cache  
+       name="org.hibernate.cache.UpdateTimestampsCache"  
+       maxElementsInMemory="5000"  
+       eternal="true"  
+       overflowToDisk="true"/> 
+    
+</ehcache>

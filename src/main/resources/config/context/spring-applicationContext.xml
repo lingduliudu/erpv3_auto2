@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/aop 
+    http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+    http://www.springframework.org/schema/tx 
+    http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+    http://www.springframework.org/schema/task   
+    http://www.springframework.org/schema/task/spring-task-4.0.xsd
+    http://www.springframework.org/schema/context 
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd"
+	default-autowire="byName" default-lazy-init="false">
+	<context:annotation-config />
+	<context:component-scan base-package="com.apt,cn.fintecher" />
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:prefix="/erpv3/" p:suffix=".jsp">
+	</bean>
+	    <bean id="multipartResolver"  class="org.springframework.web.multipart.commons.CommonsMultipartResolver">  
+        <!-- set the max upload size100MB -->  
+        <property name="maxUploadSize">  
+            <value>524288000</value>  
+        </property>  
+        <property name="maxInMemorySize">  
+            <value>4096</value>  
+        </property>  
+    </bean>
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		primary="true" init-method="init" destroy-method="close" >
+		<!-- access -->
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="${dataSource.url}" />
+		<property name="username" value="${dataSource.username}" />
+		<property name="password" value="${dataSource.password}" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="400" />
+		<!-- 初始化大小 -->
+		<property name="initialSize" value="30" />
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="60000" />
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20" />
+		<!-- 逐出连接的检测时间间隔 -->
+		<property name="timeBetweenEvictionRunsMillis" value="3000" />
+		<!-- 最小逐出时间 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		<!-- 测试连接，单位为毫秒 -->
+		<property name="validationQueryTimeout" value="2000" />
+		<!-- 测试有效用的SQL Query -->
+		<property name="validationQuery" value="SELECT 1" />
+		<!-- 连接空闲时测试是否有效 -->
+		<property name="testWhileIdle" value="true" />
+		<!-- 获取连接时测试是否有效 -->
+		<property name="testOnBorrow" value="true" />
+		<!-- 归还连接时是否测试有效 -->
+		<property name="testOnReturn" value="false" />
+		<!-- 执行查询的超时时间(秒)，执行Statement对象时如果超过此时间，则抛出SQLException -->
+		<property name="transactionQueryTimeout" value="900"></property>
+		<!-- 执行一个事务的超时时间(秒)，执行Statement对象 时判断是否为事务，如果是且此项未设置，则使用queryTimeout -->
+		<property name="queryTimeout" value="900"></property>
+		
+		<!--  检查内部泄露时用-->
+		<!--  打开removeAbandoned功能 -->
+  		<property name="removeAbandoned" value="true" />
+  		<!-- 1800秒，也就是30分钟  -->  
+  		<property name="removeAbandonedTimeout" value="2000" /> 
+  		<!-- 关闭abanded连接时输出错误日志  -->
+  		<property name="logAbandoned" value="true" />  
+			
+		<!-- 定期把监控数据输出到日志中 -->
+		<property name="timeBetweenLogStatsMillis" value="3600000" />
+		<!-- 配置监控统计拦截的filters，去掉后监控界面sql无法统计 -->
+		<property name="filters" value="stat,slf4j" />
+		<property name="proxyFilters">
+			<list>
+				<ref bean="logFilter4erpv3auto" />
+			</list>
+		</property>
+	</bean>
+
+
+	<bean id="logFilter4erpv3auto" class="com.alibaba.druid.filter.logging.Slf4jLogFilter">
+		<property name="statementExecutableSqlLogEnable" value="true" />
+	</bean>
+
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 自动扫描指定位置下的实体文件进行映射 -->
+		<property name="packagesToScan" value="com.apt.webapp.model,com.apt.webapp.dao,com.apt.webapp.service,cn.fintecher" />
+		<property name="hibernateProperties">
+			<props>
+				<!-- <prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate4.SpringSessionContext</prop> -->
+				<!-- <prop key="hibernate.current_session_context_class">thread</prop> -->
+				<prop key="current_session_context_class">thread</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.EhCacheProvider</prop>
+				<prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory
+				</prop>
+				<prop key="jdbc.use_scrollable_resultset">false</prop>
+				<prop key="hibernate.dialect">${hibernateProperties.hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql:false}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql:false}</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.jdbc.batch_size">100</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+			</props>
+		</property>
+	</bean>
+	<!-- 第二个数据源 -->
+	
+	<bean id="dataSourcePaycenter" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<!-- access -->
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="${dataSource.secend.url}" />
+		<property name="username" value="${dataSource.secend.username}" />
+		<property name="password" value="${dataSource.secend.password}" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="400" />
+		<!-- 初始化大小 -->
+		<property name="initialSize" value="30" />
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="60000" />
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="20" />
+		<!-- 逐出连接的检测时间间隔 -->
+		<property name="timeBetweenEvictionRunsMillis" value="3000" />
+		<!-- 最小逐出时间 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		<!-- 测试连接，单位为毫秒 -->
+		<property name="validationQueryTimeout" value="2000" />
+		<!-- 测试有效用的SQL Query -->
+		<property name="validationQuery" value="SELECT 1" />
+		<!-- 连接空闲时测试是否有效 -->
+		<property name="testWhileIdle" value="true" />
+		<!-- 获取连接时测试是否有效 -->
+		<property name="testOnBorrow" value="true" />
+		<!-- 归还连接时是否测试有效 -->
+		<property name="testOnReturn" value="false" />
+		<!-- 执行查询的超时时间(秒)，执行Statement对象时如果超过此时间，则抛出SQLException -->
+		<property name="transactionQueryTimeout" value="900"></property>
+		<!-- 执行一个事务的超时时间(秒)，执行Statement对象 时判断是否为事务，如果是且此项未设置，则使用queryTimeout -->
+		<property name="queryTimeout" value="900"></property>
+		
+		<!--  检查内部泄露时用-->
+		<!--  打开removeAbandoned功能 -->
+  		<property name="removeAbandoned" value="true" />
+  		<!-- 1800秒，也就是30分钟  -->  
+  		<property name="removeAbandonedTimeout" value="2000" /> 
+  		<!-- 关闭abanded连接时输出错误日志  -->
+  		<property name="logAbandoned" value="true" />  
+		
+		<!-- 定期把监控数据输出到日志中 -->
+		<property name="timeBetweenLogStatsMillis" value="3600000" />
+		<!-- 配置监控统计拦截的filters，去掉后监控界面sql无法统计 -->
+		<property name="filters" value="stat,slf4j" />
+		<property name="proxyFilters">
+			<list>
+				<ref bean="logFilter4erpv3auto" />
+			</list>
+		</property>
+	</bean>
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<tx:annotation-driven proxy-target-class="true"  transaction-manager="transactionManager" />
+	
+	<bean id="autoRun" class="com.apt.webapp.service.auto.AutoRun"></bean>
+	<bean id="autoRunBF" class="com.apt.webapp.service.auto.AutoRunBF"></bean>
+	<bean id="autoRunHF" class="com.apt.webapp.service.auto.AutoRunHF"></bean>
+	<bean id="autoRunBoc" class="com.apt.webapp.service.auto.AutoRunBoc"></bean>
+	<bean id="autoRunPoc" class="com.apt.webapp.service.auto.AutoRunPOC"></bean>
+	<bean id="autoRunDete" class="com.apt.webapp.service.auto.AutoRunDete"></bean>
+	<bean id="v2AutoRepayment" class="com.apt.webapp.service.auto.V2AutoRepayment"></bean>
+	<bean id="v1AutoRun" class="com.apt.webapp.service.auto.V1AutoRun"></bean>
+	<bean id="autoUpdatePocFileRecord" class="com.apt.webapp.service.auto.AutoUpdatePocFileRecord"></bean>
+	<task:scheduler id="scheduler" pool-size="20"/> 
+	<task:scheduled-tasks scheduler="scheduler">
+	<!--V3   手动boc扫描还款 -->
+	<task:scheduled ref="autoRunDete" method="toExecuteEfDeteRecord" cron="0 30 6 * * ?" />
+ 	<!--V3   新手标还款 -->
+     <task:scheduled ref="autoRun" method="toExecuteEfAutopayTasteOrder" cron="0 0 7 * * ?" />
+	<!-- V3  BOC 理财直投 -->
+	<task:scheduled ref="autoRunBoc" method="ImmeEfBocTransfer" cron="0 40 6 * * ?" />
+	<!-- V3  BOC 理财定投 -->
+	<task:scheduled ref="autoRunBoc" method="DeteEfBocTransfer" cron="0 30 1 * * ?" />
+	<!-- V3  BOC 信贷直投正常还款 -->
+	<task:scheduled ref="autoRun" method="toExecuteImmeCrmAutopayBoc" cron="0 45 8 * * ?"/>
+	<task:scheduled ref="autoRun" method="toExecuteImmeCrmAutopayBoc" cron="0 20 19 * * ?"/>
+	<!-- V3  BOC 信贷定投正常还款 -->
+	<task:scheduled ref="autoRun" method="toExecuteDeteCrmAutopayBoc" cron="0 55 8 * * ?"/>
+	<task:scheduled ref="autoRun" method="toExecuteDeteCrmAutopayBoc" cron="0 0 19 * * ?"/>
+	<!-- V3  BOC 信贷直投逾期还款 -->
+	<task:scheduled ref="autoRun" method="toExecuteOverImmeCrmAutopayBoc" cron="0 0 9 * * ?"/>
+	<!-- V3  BOC 信贷定投逾期还款 -->
+	<task:scheduled ref="autoRun" method="toExecuteOverDeteCrmAutopayBoc" cron="0 20 9 * * ?"/>
+	
+	<!-- V3  POC 理财 -->
+	<!-- poc理财自动还款-批量划拨 -->
+	<task:scheduled ref="autoRunPoc" method="EfAutopayPocBatchUpload" cron="0 20 1 * * ?" />
+	<!-- V3  恒丰 理财 -->
+	<!-- 恒丰理财自动还款-批量划拨 -->
+	<task:scheduled ref="autoRunHF" method="EfAutopayHFBatchUpload" cron="0 10 1 * * ?" />
+	<!-- Poc信贷正常还款-生成list -->
+    <task:scheduled ref="autoRunPoc" method="crmAutopayPoc" cron="0 0 6 * * ?" /> 
+	
+	<!-- 真实理财利息还款 -->
+     <task:scheduled ref="autoRun" method="toExecuteEfOrderPkgOrderInterest" cron="0 30 8 * * ?" />
+	
+	<!-- Poc定投手动还款更新数据 -->
+	<!-- 新上传文件扫描 -->
+	<task:scheduled ref="autoUpdatePocFileRecord" method="scanBocBgEforderFinishAuthCode" cron="0 0 22 * * ?"/>
+	
+	<!-- boc通道信贷订单宝付功能 -->
+	<!-- boc通道订单宝付代扣功能 -->
+	<task:scheduled ref="autoRunBF" method="toBFNaturalOrder" cron="0 10 6 * * ?" />
+		<!--<task:scheduled ref="autoRunBF" method="toBFOverdueOrder" cron="0 0 6 15 * ?"  -->
+		<!--<task:scheduled ref="autoRunBF" method="toBFOverdueOrder" cron="0 0 6 28 * ?" /> -->
+	<!-- boc通道订单宝付代付功能 -->
+	<task:scheduled ref="autoRunBF" method="toBFPayFunction" cron="0 00 23 * * ?" />
+	
+	<!-- boc通道订单恒丰通道宝付代扣 -->
+	<!--<task:scheduled ref="autoRunBF" method="toHFOverdueOrder" cron="0 30 2 15 * ?" />-->
+	<!--<task:scheduled ref="autoRunBF" method="toHFOverdueOrder" cron="0 30 2 28 * ?" />-->
+	<!-- 恒丰通道宝付代扣 -->
+	<task:scheduled ref="autoRunBF" method="toHFNaturalOrder" cron="0 50 2 * * ?" />
+	
+   <!-- 自动逾期 -->
+     <task:scheduled ref="autoRun" method="toExecuteAutoOverCrmOrder" cron="0 1 0 * * ?"/>
+ 	 <!-- v2自动逾期 -->
+    <task:scheduled ref="v2AutoRepayment" method="autoOverdue" cron="0 2 0 * * ?"/>
+  	<!-- V2正常还款 -->
+    <task:scheduled ref="v2AutoRepayment" method="dueRepayment" cron="0 1 8 * * ?"/>
+	<!-- v1自动还款 -->
+	<task:scheduled ref="v1AutoRun" method="toExecuteV1CrmAutopay" cron="0 31 8 * * ?" />
+	<!-- v1自动逾期 -->
+	<task:scheduled ref="v1AutoRun" method="toExecuteAutoOverV1CrmOrder" cron="0 1 0 * * ?" />
+    </task:scheduled-tasks> 
+</beans>
+
+            
